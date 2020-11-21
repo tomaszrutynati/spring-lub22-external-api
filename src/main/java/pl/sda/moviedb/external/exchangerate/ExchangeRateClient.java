@@ -2,8 +2,11 @@ package pl.sda.moviedb.external.exchangerate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -37,5 +40,32 @@ public class ExchangeRateClient {
 
         throw new IllegalStateException("It was impossible to fetch currency rate " + rateRsp.getStatusCodeValue());
     }
+
+    /*
+    W API NBP NIE MA TAKIEJ METODY, TO TYLKO POKAZANIE JAK ZROBIC POST !!!!!!!
+     */
+    public void publishCurrencyRate(Double rate, String currency, LocalDate forDate) {
+        String address = String.format("%s/exchangerates/rates/", nbpProperties.getUrl());
+
+        HttpHeaders headers = new HttpHeaders();
+        //Jesli api wymaga dodania naglowkow mozemy to zrobic w ten sposob!
+        //Czesto jest tak ze musimy dodac dwa naglowki content-type(application/json) i accept(application/json)
+        headers.add("api-key", "12132321132");
+
+        HttpEntity<CurrencyRateRq> entity = new HttpEntity<>(new CurrencyRateRq(rate, currency, forDate), headers);
+
+        ResponseEntity<Void> rsp = restTemplate.exchange(address, HttpMethod.POST, entity, Void.class);
+
+        if (!rsp.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalStateException("Currency rate override failure");
+        }
+    }
+
+    @AllArgsConstructor
+    @Getter
+    public static class CurrencyRateRq {
+        private Double rate;
+        private String currency;
+        private LocalDate forDate;
+    }
 }
-///exchangerates/rates/a/usd/2016-04-04
